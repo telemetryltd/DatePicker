@@ -358,13 +358,13 @@
               // Check for limits.
               if ( options.minDate ) {
                 var dMin = new Date(options.minDate);
-                if ( ( month == dMin.getMonth() && iDate < dMin.getDate() ) || month < dMin.getMonth() ) {
+                if ( ( date.getYear() == dMin.getYear() && month == dMin.getMonth() && iDate < dMin.getDate() ) || date < dMin ) {
                   iOob = -1;
                 }
               }
               if ( options.maxDate ) {
                 var dMax = new Date(options.maxDate);
-                if ( ( month == dMax.getMonth() && iDate > dMax.getDate() ) || month > dMax.getMonth() ) {
+                if ( ( date.getYear() == dMax.getYear() && month == dMax.getMonth() && iDate > dMax.getDate() ) || date > dMax ) {
                   iOob = 1;
                 }
               }
@@ -559,13 +559,13 @@
 
               if ( options.minDate ) {
                 var dMin = new Date(options.minDate);
-                if ( dMin.getMonth() > dTarget.getMonth() ) {
+                if ( dMin.setMonth(dMin.getMonth() - 1) > dTarget.getTime() ) {
                   bContinue = false;
                 }
               }
               if ( options.maxDate ) {
                 var dMax = new Date(options.maxDate);
-                if ( dMax.getMonth() < dTarget.getMonth() ) {
+                if ( dMax < dTarget ) {
                   bContinue = false;
                 }
               }
