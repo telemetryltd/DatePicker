@@ -271,7 +271,15 @@
         /**
          * Private option, used to determine when a range is selected
          */
-        lastSel: false
+        lastSel: false,
+        /**
+         * The minimum possible date selectable in the picker.
+         */
+        minDate: null,
+        /**
+         * The maximum possible date selectable in the picker.
+         */
+        maxDate: null
       },
       
       /**
@@ -342,7 +350,31 @@
               data.weeks[indic].days[indic2].classname.push('datepickerNotInMonth');
               // disable clicking of the 'not in month' cells
               data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
+            } else {
+              // We're definitely in month.
+              var iDate = date.getDate();
+              var iOob = 0;
+              
+              // Check for limits.
+              if ( options.minDate ) {
+                var dMin = new Date(options.minDate);
+                if ( ( month == dMin.getMonth() && iDate < dMin.getDate() ) || month < dMin.getMonth() ) {
+                  iOob = -1;
+                }
+              }
+              if ( options.maxDate ) {
+                var dMax = new Date(options.maxDate);
+                if ( ( month == dMax.getMonth() && iDate > dMax.getDate() ) || month > dMax.getMonth() ) {
+                  iOob = 1;
+                }
+              }
+              
+              if ( iOob != 0 ) {
+                data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
+                data.weeks[indic].days[indic2].oob = iOob;                
+              }
             }
+            
             if (date.getDay() == 0) {
               data.weeks[indic].days[indic2].classname.push('datepickerSunday');
             }
@@ -353,9 +385,23 @@
             var val = date.valueOf();
             if(options.date && (!$.isArray(options.date) || options.date.length > 0)) {
               if (fromUser.selected || options.date == val || $.inArray(val, options.date) > -1 || (options.mode == 'range' && val >= options.date[0] && val <= options.date[1])) {
-                data.weeks[indic].days[indic2].classname.push('datepickerSelected');
+                if ( typeof data.weeks[indic].days[indic2].oob == "undefined" || data.weeks[indic].days[indic2].oob == 0 ) {
+                  data.weeks[indic].days[indic2].classname.push('datepickerSelected');
+                }
+                else {
+                  // Select the min date.
+                  if ( options.minDate ) {
+                    options.current = new Date(options.minDate);
+                    options.date = [options.current.getTime(), options.current.getTime()];
+                    
+                    // Redraw the calendar.
+                    fill(el);
+                    return;
+                  }
+                }
               }
             }
+      
             if (fromUser.disabled) {
               data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
             }
@@ -366,6 +412,7 @@
             cnt++;
             date.addDays(1);
           }
+          
           // Fill the datepickerDays template with data
           html = tmpl(tpl.days.join(''), data) + html;
           
@@ -504,15 +551,36 @@
                 }
               }
             } else if (parentEl.parent().parent().is('thead')) {
-              // clicked either next/previous arrows
-              if(tblEl.eq(0).hasClass('datepickerViewDays')) {
-                options.current.addMonths(el.hasClass('datepickerGoPrev') ? -1 : 1);
-              } else if(tblEl.eq(0).hasClass('datepickerViewMonths')) {
-                options.current.addYears(el.hasClass('datepickerGoPrev') ? -1 : 1);
-              } else if(tblEl.eq(0).hasClass('datepickerViewYears')) {
-                options.current.addYears(el.hasClass('datepickerGoPrev') ? -12 : 12);
+              var bContinue = true;
+              var dTarget = new Date(options.current);
+              el.hasClass('datepickerGoPrev') 
+                ? dTarget.setMonth(dTarget.getMonth() - 1)
+                : dTarget.setMonth(dTarget.getMonth() + 1);
+
+              if ( options.minDate ) {
+                var dMin = new Date(options.minDate);
+                if ( dMin.getMonth() > dTarget.getMonth() ) {
+                  bContinue = false;
+                }
               }
-              fillIt = true;
+              if ( options.maxDate ) {
+                var dMax = new Date(options.maxDate);
+                if ( dMax.getMonth() < dTarget.getMonth() ) {
+                  bContinue = false;
+                }
+              }
+              
+              if ( bContinue ) {
+                // clicked either next/previous arrows
+                if(tblEl.eq(0).hasClass('datepickerViewDays')) {
+                  options.current.addMonths(el.hasClass('datepickerGoPrev') ? -1 : 1);
+                } else if(tblEl.eq(0).hasClass('datepickerViewMonths')) {
+                  options.current.addYears(el.hasClass('datepickerGoPrev') ? -1 : 1);
+                } else if(tblEl.eq(0).hasClass('datepickerViewYears')) {
+                  options.current.addYears(el.hasClass('datepickerGoPrev') ? -12 : 12);
+                }
+                fillIt = true;
+              }
             }
             
           } else if (parentEl.is('td') && !parentEl.hasClass('datepickerDisabled')) {
@@ -786,6 +854,7 @@
       init: function(options){
         options = $.extend({}, defaults, options||{});
         extendDate(options.locale);
+        
         options.calendars = Math.max(1, parseInt(options.calendars,10)||1);
         options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
         
