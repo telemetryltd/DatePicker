@@ -149,7 +149,7 @@ table.datepickerViewYears tr.datepickerDoW {
 }
 td.datepickerDisabled a,
 td.datepickerDisabled.datepickerNotInMonth a{
-  color: #555555;
+  color: #CCCCCC;
 }
 td.datepickerDisabled a:hover {
   color: #333333;
