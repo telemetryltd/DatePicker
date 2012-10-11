@@ -216,6 +216,14 @@
          * @param HTMLElement el the DatePicker element, ie the element that DatePicker was invoked upon
          */
         onChange: function() { },
+        /* 
+         * Callback, invoked when a date range is selected, with 'this' referring to
+         * the HTMLElement that DatePicker was invoked upon.
+         * 
+         * @param dates: Selected date(s), ie an array containing a 'from' and 'to' Date objects. 
+         * @param HTMLElement el the DatePicker element, ie the element that DatePicker was invoked upon
+         */
+        onRangeChange: function() { },
         /**
          * Invoked before a non-inline datepicker is shown, with 'this'
          * referring to the HTMLElement that DatePicker was invoked upon, ie
@@ -250,6 +258,18 @@
          * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
          */
         onAfterHide: function() { },
+        /**
+         * Invoked after pressing the previous month button.
+         *
+         * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
+         */
+        onPrev: function() { },
+        /**
+         * Invoked after pressing the next month button.
+         *
+         * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
+         */
+        onNext: function() { },
         /**
          * Locale text for day/month names: provide a hash with keys 'daysMin', 'months' and 'monthsShort'. Default english 
          */
@@ -516,6 +536,7 @@
           var tblIndex = $('table', this).index(tblEl.get(0)) - 1;
           var tmp = new Date(options.current);
           var changed = false;
+          var changedRange = false;
           var fillIt = false;
           var currentCal = Math.floor(options.calendars/2);
           
@@ -573,7 +594,16 @@
               if ( bContinue ) {
                 // clicked either next/previous arrows
                 if(tblEl.eq(0).hasClass('datepickerViewDays')) {
-                  options.current.addMonths(el.hasClass('datepickerGoPrev') ? -1 : 1);
+                  if ( el.hasClass('datepickerGoPrev') ) {
+                    options.current.addMonths(-1);
+                    options.onPrev.call(null, tblEl);
+                  }
+                  else {
+                    options.current.addMonths(1);
+                    options.onNext.call(null, tblEl);
+                  }
+                  
+                  // Fire the event based on which one it is.
                 } else if(tblEl.eq(0).hasClass('datepickerViewMonths')) {
                   options.current.addYears(el.hasClass('datepickerGoPrev') ? -1 : 1);
                 } else if(tblEl.eq(0).hasClass('datepickerViewYears')) {
@@ -635,6 +665,7 @@
                       options.date[1] = val;
                     }
                     options.lastSel = !options.lastSel;
+                    changedRange = !options.lastSel;
                     break;
                   default:
                     options.date = tmp.valueOf();
@@ -649,6 +680,9 @@
           }
           if(changed) {
             options.onChange.apply(this, prepareDate(options));
+          }
+          if(changedRange) {
+            options.onRangeChange.apply(this, prepareDate(options));
           }
         }
         return false;
@@ -981,6 +1015,27 @@
       },
       
       /**
+       * Shifts the calendar to a specified date, without actually changing
+       * the current date.
+       *
+       * @param Date date The date to move to. Note that this does not
+       *        require granularity beyond the mode of the DatePicker.
+       *
+       * @see DatePickerMoveTo()
+       */
+      moveTo: function(date) {
+        return this.each(function(){
+          if ( $(this).data('datepickerId')) {
+            var cal = $('#' + $(this).data('datepickerId'));
+            var options = cal.data('datepicker');
+            
+            options.current = date;
+            fill(cal.get(0));
+          }
+        });      
+      },
+      
+      /**
        * Returns the currently selected date(s) and the datepicker element.
        * 
        * @return array where the first element is the selected date(s)  When calendar mode  is 'single' this
@@ -1044,7 +1099,8 @@
     DatePickerSetDate: DatePicker.setDate,
     DatePickerGetDate: DatePicker.getDate,
     DatePickerClear: DatePicker.clear,
-    DatePickerLayout: DatePicker.fixLayout
+    DatePickerLayout: DatePicker.fixLayout,
+    DatePickerMoveTo: DatePicker.moveTo
   });
 })(jQuery);
 
