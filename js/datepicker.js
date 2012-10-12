@@ -271,6 +271,10 @@
          */
         onNext: function() { },
         /**
+         * Invoked when the DatePicker has finished rendering.
+         */
+        onRender: function() { },
+        /**
          * Locale text for day/month names: provide a hash with keys 'daysMin', 'months' and 'monthsShort'. Default english 
          */
         locale: {
@@ -299,7 +303,11 @@
         /**
          * The maximum possible date selectable in the picker.
          */
-        maxDate: null
+        maxDate: null,
+        /**
+         * Stops the highlighting of an entire month on title click in range mode.
+         */
+        disableMonthSelect: false
       },
       
       /**
@@ -443,6 +451,9 @@
           // datepickerMonths template
           html = tmpl(tpl.months.join(''), data) + html;
           tblCal.append(html);
+          
+          // Fire the render callback.
+          options.onRender.call(null, options.current);
         }
       },
       
@@ -547,7 +558,7 @@
               // clicking on the title of a Month Datepicker
               tmp.addMonths(tblIndex - currentCal);
               
-              if(options.mode == 'range') {
+              if(options.mode == 'range' && !options.disableMonthSelect) {
                 // range, select the whole month
                 options.date[0] = (tmp.setHours(0,0,0,0)).valueOf();
                 tmp.addDays(tmp.getMaxDays()-1);
@@ -596,11 +607,11 @@
                 if(tblEl.eq(0).hasClass('datepickerViewDays')) {
                   if ( el.hasClass('datepickerGoPrev') ) {
                     options.current.addMonths(-1);
-                    options.onPrev.call(null, tblEl);
+                    options.onPrev.call(null,$(this));
                   }
                   else {
                     options.current.addMonths(1);
-                    options.onNext.call(null, tblEl);
+                    options.onNext.call(null,$(this));
                   }
                   
                   // Fire the event based on which one it is.
@@ -1035,6 +1046,14 @@
         });      
       },
       
+      getCurrent: function() {
+        if (this.size() > 0) {
+          var options = $('#' + $(this).data('datepickerId')).data('datepicker');
+        
+          return options.current;
+        }
+      },
+      
       /**
        * Returns the currently selected date(s) and the datepicker element.
        * 
@@ -1050,6 +1069,18 @@
         if (this.size() > 0) {
           return prepareDate($('#' + $(this).data('datepickerId')).data('datepicker'));
         }
+      },
+      
+      /**
+       * Accessors for boundaries.
+       */
+      getBounds: function() {
+        var options = $('#' + $(this).data('datepickerId')).data('datepicker');
+        
+        return {
+          min: options.minDate,
+          max: options.maxDate
+        };
       },
       
       /**
@@ -1100,7 +1131,9 @@
     DatePickerGetDate: DatePicker.getDate,
     DatePickerClear: DatePicker.clear,
     DatePickerLayout: DatePicker.fixLayout,
-    DatePickerMoveTo: DatePicker.moveTo
+    DatePickerMoveTo: DatePicker.moveTo,
+    DatePickerGetBounds: DatePicker.getBounds,
+    DatePickerGetCurrent: DatePicker.getCurrent
   });
 })(jQuery);
 
