@@ -307,7 +307,11 @@
         /**
          * Stops the highlighting of an entire month on title click in range mode.
          */
-        disableMonthSelect: false
+        disableMonthSelect: false,
+        /**
+         * For use when highlighting other dates after selecting a single one.
+         */
+        highlightMode: null,
       },
       
       /**
@@ -315,10 +319,16 @@
        * 
        * @param HTMLDivElement el datepicker container element
        */
-      fill = function(el) {
+      fill = function(el, highlight) {
         var options = $(el).data('datepicker');
         var cal = $(el);
         var currentCal = Math.floor(options.calendars/2), date, data, dow, month, cnt = 0, days, indic, indic2, html, tblCal;
+        
+        var highlightedItem = [];
+        if ( typeof highlight != "undefined" ) {
+          highlightedItem = highlight;
+          console.log("sfdasdfsdf", highlightedItem);
+        }
         
         cal.find('td>table tbody').remove();
         for(var i = 0; i < options.calendars; i++) {
@@ -352,6 +362,7 @@
           month = date.getMonth();
           var dow = (date.getDay() - options.starts) % 7;
           date.addDays(-(dow + (dow < 0 ? 7 : 0)));
+
           cnt = 0;
           while(cnt < 42) {
             indic = parseInt(cnt/7,10);
@@ -430,17 +441,159 @@
               }
             }
       
+            // BENK
+            // Check if we're in daily mode.
+            if ( options.highlightMode == 'daily' ) {
+              var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
+              if ( iIn < 0 ) {
+                data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+              }
+            }
+            else if ( options.highlightMode == 'weekly' ) {
+              
+              console.log("weeeeeek");
+              
+              if ( date.getTime() == options.date ) {
+                // We now know the indices of this element (i.e. Calendar, Week, Date)
+                if ( typeof highlight == "undefined" ) {
+                  if ( options.date.length > 1 ) { 
+                    highlightedItem.push({
+                        cal: i,
+                        week: indic,
+                        date: indic2
+                    });
+                  }
+                  else {
+                    highlightedItem = {
+                      cal: i,
+                      week: indic,
+                      date: indic2,
+                    };
+                  }
+                    
+                  fill(el, highlightedItem);
+                  return;
+                }
+              }
+              
+              if ( typeof highlight != "undefined" ) {
+                
+                // FOR EACH HIGHLIGHT
+                
+                if ( indic2 == highlight.date ) {
+                  var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
+                  if ( iIn < 0 ) {
+                    data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+                  }
+                }
+              }
+            }
+            else if ( options.highlightMode == 'monthly' ) {
+              
+              function getDayIndex(date) {
+                // Which day is it?
+                var iDay = date.getDay();
+                var iMonth = date.getMonth();
+                
+                var zIndex = 1;
+                var dNew = new Date(date);
+                dNew.setDate(1);
+                
+                while ( dNew.getMonth() == iMonth )
+                {
+                  if ( dNew.getDay() == iDay ) {
+                    if ( zIndex == 4 ) {
+                      // Check if this is, in fact, the last.
+                      var temp = new Date(dNew);
+                      temp.addDays(7);
+                      if ( temp.getMonth() != iMonth ) {
+                        zIndex = "last";
+                      }
+                    }
+                    if ( zIndex > 4 ) {
+                      zIndex = "last";
+                    }
+
+                    if ( $.isNumeric(zIndex) ) {
+                      zIndex++;
+                    }
+                  }
+
+                  if ( dNew.getDate() == date.getDate() ) {
+                    return zIndex;
+                  }
+                
+                  // Increment the day counter.
+                  dNew.addDays(1);
+                }
+                
+                return;
+              }
+
+              function getDateFromDayIndexMonth(iDay, zIndex, iMonth) {
+                var dTarget = new Date();
+                dTarget.setDate(1);
+                dTarget.setMonth(iMonth);
+                
+                while ( dTarget.getMonth() == iMonth ) {
+                  // If we're the same calendar day...
+                  if ( dTarget.getDay() == iDay ) {
+                    // ... and the same day index.
+                    if ( getDayIndex(dTarget) == zIndex ) {
+                      return dTarget;
+                    }
+                  }
+                  
+                  dTarget.addDays(1);
+                }
+                
+                return null;
+              }
+              
+              if ( date.getTime() == options.date ) {
+                // We now know the indices of this element (i.e. Calendar, Week, Date)
+                if ( typeof highlight == "undefined" ) {
+                  highlightedItem = {
+                    day: date.getDay(),
+                    month: date.getMonth(),
+                    index: getDayIndex(date)
+                  };
+
+                  var test = getDayIndex(new Date("2012/9/25"));
+                  
+                  fill(el, highlightedItem);
+                  return;
+                }
+              }
+              
+              if ( typeof highlight != "undefined" ) {
+                var dTarget = getDateFromDayIndexMonth(highlight.day, highlight.index, date.getMonth());
+                dTarget.setHours(0,0,0,0);
+                
+                if ( dTarget.getTime() == date.getTime() ) {
+                  var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
+                  if ( iIn < 0 ) {                  
+                    data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+                  }
+                }
+              }
+            }
+            
             if (fromUser.disabled) {
               data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
             }
+            
             if (fromUser.className) {
               data.weeks[indic].days[indic2].classname.push(fromUser.className);
             }
             data.weeks[indic].days[indic2].classname = data.weeks[indic].days[indic2].classname.join(' ');
             cnt++;
+            
             date.addDays(1);
           }
           
+      
+      
           // Fill the datepickerDays template with data
           html = tmpl(tpl.days.join(''), data) + html;
           
@@ -639,6 +792,7 @@
               tblEl.eq(0).toggleClass('datepickerViewYears datepickerViewMonths');
             } else {
               // clicked a day cell
+                
                 var val = parseInt(el.text(), 10);
                 tmp.addMonths(tblIndex - currentCal);
                 if (parentEl.hasClass('datepickerNotInMonth')) {
@@ -1024,6 +1178,19 @@
           }
         });
       },
+
+      setHighlightMode: function(sMode){
+        return this.each(function(){
+          if ($(this).data('datepickerId')) {
+            var cal = $('#' + $(this).data('datepickerId'));
+            var options = cal.data('datepicker');
+            
+            options.highlightMode = sMode;
+            
+            fill(cal.get(0));
+          }
+        });
+      },
       
       /**
        * Shifts the calendar to a specified date, without actually changing
@@ -1133,7 +1300,8 @@
     DatePickerLayout: DatePicker.fixLayout,
     DatePickerMoveTo: DatePicker.moveTo,
     DatePickerGetBounds: DatePicker.getBounds,
-    DatePickerGetCurrent: DatePicker.getCurrent
+    DatePickerGetCurrent: DatePicker.getCurrent,
+    DatePickerSetHighlightMode: DatePicker.setHighlightMode
   });
 })(jQuery);
 

@@ -24,7 +24,8 @@ div.comment {
     font-size: 12px;
 }
 
-.pickerContainer.range {
+.pickerContainer.range,
+.pickerContainer.highlighter {
     width: 375px;
 }
 
@@ -37,6 +38,37 @@ div.comment {
     padding: 2px;
 }
 
-#container .pickerCode.range {
+#container .pickerCode.range,
+#container .pickerCode.highlighter {
     width: 319px;
+}
+
+#container .item:last-child {
+    height: 265px;
+}
+
+#container .periodicity {
+    width: 100%;
+    text-align: center;
+}
+#container .periodicity select {
+    width: 150px;
+    margin-bottom: 10px;
+}
+
+.datepickerHighlighted {
+    background: #88C5EB;
+}
+
+#container .datepickerHighlighted a:hover {
+    color: white;
+}
+
+.displayNone {
+    display: none !important;
+}
+
+#container .periodicity span {
+    font-size: 12px;
+    color: #505050;
 }

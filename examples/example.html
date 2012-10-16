@@ -24,6 +24,7 @@
                 $('.pickerContainer.basic').DatePicker({mode:"single", date: new Date(), inline: true});
                 $('.pickerContainer.range').DatePicker({mode:"range", date: new Date(), inline: true, calendars: 2});
                 $('.pickerContainer.minmax').DatePicker({mode:"range", date: new Date(), inline: true, minDate: "2010/10/24", maxDate: "2012/12/17", onNext: function(el) { console.log("onNext fired."); }, onRender: function(date) { console.log("Rendered with date", date); } });
+                $('.pickerContainer.highlighter').DatePicker({mode:"single", date: new Date(), calendars: 2, inline: true, onChange: function(el, date) { console.log("Changed to", el, date); }});
                 prettyPrint();
             });
         </script>
@@ -50,6 +51,21 @@
                 <div class="pickerContainer minmax"></div>
                 <div class="codeLabel">Code:</div>
                 <pre class="pickerCode minmax prettyprint">$('#datepicker').DatePicker({<br />&nbsp;&nbsp;mode:"single",<br />&nbsp;&nbsp;date: new Date(),<br />&nbsp;&nbsp;inline: true,<br />&nbsp;&nbsp;minDate: "2012/10/24",<br />&nbsp;&nbsp;maxDate: "2012/12/17"<br />});</pre>
+            </div>
+            <div class="item">
+                <h2>DatePicker with Highlighting</h2>
+                <div class="comment">This version of the DatePicker will highlight every day that is indicated by the periodicity selected below.</div>
+                <div class="periodicity">
+                    <span>Repeats:</span>
+                    <select id="repeats">
+                        <option>Daily</option>
+                        <option>Weekly</option>
+                        <option>Monthly</option>
+                    </select>
+                </div>
+                <div class="pickerContainer highlighter"></div>
+                <div class="codeLabel">Code:</div>
+                <pre class="pickerCode highlighter prettyprint">$('#datepicker').DatePicker({<br />&nbsp;&nbsp;mode:"single",<br />&nbsp;&nbsp;date: new Date(),<br />&nbsp;&nbsp;inline: true,<br />&nbsp;&nbsp;calendars: 2,<br />&nbsp;&nbsp;onChange: function(el, date) {<br />&nbsp;&nbsp;&nbsp;&nbsp;console.log("Changed to", el, date);<br />&nbsp;&nbsp;}<br />});</pre>
             </div>
         </div>
     </body>
