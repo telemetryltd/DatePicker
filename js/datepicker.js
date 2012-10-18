@@ -327,7 +327,7 @@
         var highlightedItem = [];
         if ( typeof highlight != "undefined" ) {
           highlightedItem = highlight;
-          console.log("sfdasdfsdf", highlightedItem);
+          console.log("highlighted items passed to fill", highlightedItem);
         }
         
         cal.find('td>table tbody').remove();
@@ -440,8 +440,6 @@
                 }
               }
             }
-      
-            // BENK
             // Check if we're in daily mode.
             if ( options.highlightMode == 'daily' ) {
               var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
@@ -450,44 +448,65 @@
               }
             }
             else if ( options.highlightMode == 'weekly' ) {
-              
-              console.log("weeeeeek");
-              
-              if ( date.getTime() == options.date ) {
-                // We now know the indices of this element (i.e. Calendar, Week, Date)
+              if ( $.inArray(date.getTime(), options.date) > -1 ) {
+                // Check if we have items to highlight.
                 if ( typeof highlight == "undefined" ) {
                   if ( options.date.length > 1 ) { 
-                    highlightedItem.push({
-                        cal: i,
-                        week: indic,
-                        date: indic2
+                    if ( !$.isArray(highlightedItem) ) {
+                      highlightedItem = [];
+                    }
+                    
+                    var dThis = new Date(date);
+                    var selected = {
+                      week: parseInt(dThis.getDate() / 7),
+                      day: dThis.getDay(),
+                      base: dThis
+                    };
+                    
+                    // Check if we need to push this item.
+                    var bPush = true;
+                    $.each(highlightedItem, function() {
+                      if ( selected.base.getTime() == this.base.getTime() ) {
+                        bPush = false;
+                        return;
+                      }
                     });
+                    
+                    // We only push distinct entries.
+                    if ( bPush ) {
+                      highlightedItem.push(selected);
+                    }
                   }
                   else {
                     highlightedItem = {
                       cal: i,
                       week: indic,
-                      date: indic2,
+                      day: indic2,
                     };
                   }
                     
-                  fill(el, highlightedItem);
-                  return;
+                  if ( options.date.length == 1 || highlightedItem.length == options.date.length ) {
+                    fill(el, highlightedItem);
+                    return;
+                  }
                 }
               }
               
               if ( typeof highlight != "undefined" ) {
-                
-                // FOR EACH HIGHLIGHT
-                
-                if ( indic2 == highlight.date ) {
-                  var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
-                  if ( iIn < 0 ) {
-                    data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
-                  }
+                if ( !$.isArray(highlight) ) {
+                  highlight = [highlight];
                 }
+                  
+                $.each(highlight, function() {
+                  if ( indic2 == this.day ) {
+                    var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
+                    if ( iIn < 0 ) {
+                      data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+                    }
+                  }
+                });
               }
-            }
+            }  // Weekly
             else if ( options.highlightMode == 'monthly' ) {
               
               function getDayIndex(date) {
@@ -528,7 +547,7 @@
                 }
                 
                 return;
-              }
+              }  // getDayIndex
 
               function getDateFromDayIndexMonth(iDay, zIndex, iMonth) {
                 var dTarget = new Date();
@@ -548,7 +567,7 @@
                 }
                 
                 return null;
-              }
+              }  // getDateFromDayIndexMonth
               
               if ( date.getTime() == options.date ) {
                 // We now know the indices of this element (i.e. Calendar, Week, Date)
@@ -577,7 +596,7 @@
                   }
                 }
               }
-            }
+            }  // Monthly
             
             if (fromUser.disabled) {
               data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
