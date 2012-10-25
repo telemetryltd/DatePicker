@@ -810,9 +810,6 @@
                       var selected = {};
                       
                       if ( options.highlightMode == "monthly" ) {
-      
-                        testFn();
-      
                         selected = {
                           day: dThis.getDay(),
                           month: dThis.getMonth(),
