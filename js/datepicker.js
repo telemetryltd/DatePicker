@@ -408,19 +408,9 @@
        * @param HTMLDivElement el datepicker container element
        */
       fill = function(el, highlight) {
-        console.log("Filling, with these params:", el, highlight);
-        
         var options = $(el).data('datepicker');
         var cal = $(el);
         var currentCal = Math.floor(options.calendars/2), date, data, dow, month, cnt = 0, days, indic, indic2, html, tblCal;
-        
-        /*var highlightedItem = [];
-        if ( highlight ) {
-          highlightedItem = highlight;
-          
-          //console.log("Starting fill, with these:", highlight, options.highlightedElements);
-          //highlightedItem = $.extend(highlight, options.highlightedElements);
-        }*/
         
         cal.find('td>table tbody').remove();
         for(var i = 0; i < options.calendars; i++) {
