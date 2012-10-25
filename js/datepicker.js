@@ -204,7 +204,7 @@
          *         disabled: if true, date cell will be disabled
          *         className: css class name to add to the cell
          */
-        onRenderCell: function() { return {} },
+        onRenderCell: function() { return {}; },
         /* 
          * Callback, invoked when a date is selected, with 'this' referring to
          * the HTMLElement that DatePicker was invoked upon.
@@ -232,7 +232,7 @@
          * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
          * @return true to allow the datepicker to be shown, false to keep it hidden
          */
-        onBeforeShow: function() { return true },
+        onBeforeShow: function() { return true; },
         /**
          * Invoked after a non-inline datepicker is shown, with 'this'
          * referring to the HTMLElement that DatePicker was invoked upon, ie
@@ -249,7 +249,7 @@
          * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
          * @return true to allow the datepicker to be hidden, false to keep it visible
          */
-        onBeforeHide: function() { return true },
+        onBeforeHide: function() { return true; },
         /**
          * Invoked after a non-inline datepicker is hidden, with 'this'
          * referring to the HTMLElement that DatePicker was invoked upon, ie
@@ -312,6 +312,94 @@
          * For use when highlighting other dates after selecting a single one.
          */
         highlightMode: null,
+        /**
+         * The elements that are highlighted in the DatePicker.
+         */
+        highlightedElements: []
+      },
+
+      /**
+       * Internal method to get the index of a specific date in the month.
+       * i.e. is it the first, third, last day of that type of the month
+       *
+       * @param Date date The date that we are testing.
+       */
+      getDayIndex = function(date) {
+        // Which day is it?
+        var iDay = date.getDay();
+        var iMonth = date.getMonth();
+        
+        var zIndex = 0;
+        var dNew = new Date(date);
+        dNew.setDate(1);
+        
+        while ( dNew.getMonth() == iMonth )
+        {
+          if ( dNew.getDay() == iDay ) {
+            if ( zIndex == 4 ) {
+              // Check if this is, in fact, the last.
+              var temp = new Date(dNew);
+              temp.addDays(7);
+              if ( temp.getMonth() != iMonth ) {
+                zIndex = "last";
+              }
+            }
+            if ( zIndex > 4 ) {
+              zIndex = "last";
+            }
+
+            if ( $.isNumeric(zIndex) ) {
+              zIndex++;
+            }
+          }
+
+          if ( dNew.getDate() == date.getDate() ) {
+            return zIndex;
+          }
+        
+          // Increment the day counter.
+          dNew.addDays(1);
+        }
+        
+        return;
+      },
+
+      /**
+       * Internal method to get the Date from the day, index, and month of a date.
+       * Can be seen as a reverse of getDayIndex.
+       *
+       * @param int iDay The day (e.g. Mon)
+       * @param int/string zIndex The index (e.g. 1, "last")
+       * @param int iMonth The month index
+       */
+      getDateFromDayIndexMonth = function(iDay, zIndex, iMonth) {
+        var dTarget = new Date();
+        dTarget.setDate(1);
+        dTarget.setMonth(iMonth);
+        
+        while ( dTarget.getMonth() == iMonth ) {
+          // If we're the same calendar day...
+          if ( dTarget.getDay() == iDay ) {
+            // ... and the same day index.
+            if ( zIndex != "last" ) {
+              if ( getDayIndex(dTarget) == zIndex ) {
+                return dTarget;
+              }
+            }
+            else {
+              // Get the final day (indexed by iDay) in this month.
+              var temp =  new Date(dTarget);
+              temp.addDays(7);
+              if ( temp.getMonth() != iMonth ) {
+                return dTarget;
+              }
+            }
+          }
+          
+          dTarget.addDays(1);
+        }
+        
+        return null;
       },
       
       /**
@@ -320,15 +408,19 @@
        * @param HTMLDivElement el datepicker container element
        */
       fill = function(el, highlight) {
+        console.log("Filling, with these params:", el, highlight);
+        
         var options = $(el).data('datepicker');
         var cal = $(el);
         var currentCal = Math.floor(options.calendars/2), date, data, dow, month, cnt = 0, days, indic, indic2, html, tblCal;
         
-        var highlightedItem = [];
-        if ( typeof highlight != "undefined" ) {
+        /*var highlightedItem = [];
+        if ( highlight ) {
           highlightedItem = highlight;
-          console.log("highlighted items passed to fill", highlightedItem);
-        }
+          
+          //console.log("Starting fill, with these:", highlight, options.highlightedElements);
+          //highlightedItem = $.extend(highlight, options.highlightedElements);
+        }*/
         
         cal.find('td>table tbody').remove();
         for(var i = 0; i < options.calendars; i++) {
@@ -448,55 +540,9 @@
               }
             }
             else if ( options.highlightMode == 'weekly' ) {
-              if ( $.inArray(date.getTime(), options.date) > -1 ) {
-                // Check if we have items to highlight.
-                if ( typeof highlight == "undefined" ) {
-                  if ( options.date.length > 1 ) { 
-                    if ( !$.isArray(highlightedItem) ) {
-                      highlightedItem = [];
-                    }
-                    
-                    var dThis = new Date(date);
-                    var selected = {
-                      week: parseInt(dThis.getDate() / 7),
-                      day: dThis.getDay(),
-                      base: dThis
-                    };
-                    
-                    // Check if we need to push this item.
-                    var bPush = true;
-                    $.each(highlightedItem, function() {
-                      if ( selected.base.getTime() == this.base.getTime() ) {
-                        bPush = false;
-                        return;
-                      }
-                    });
-                    
-                    // We only push distinct entries.
-                    if ( bPush ) {
-                      highlightedItem.push(selected);
-                    }
-                  }
-                  else {
-                    highlightedItem = {
-                      cal: i,
-                      week: indic,
-                      day: indic2,
-                    };
-                  }
-                    
-                  if ( options.date.length == 1 || highlightedItem.length == options.date.length ) {
-                    fill(el, highlightedItem);
-                    return;
-                  }
-                }
-              }
-              
-              if ( typeof highlight != "undefined" ) {
-                if ( !$.isArray(highlight) ) {
-                  highlight = [highlight];
-                }
-                  
+              // Highlighting the items once we have some selected
+              highlight = options.highlightedElements;
+              if ( highlight ) {
                 $.each(highlight, function() {
                   if ( indic2 == this.day ) {
                     var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
@@ -508,93 +554,20 @@
               }
             }  // Weekly
             else if ( options.highlightMode == 'monthly' ) {
-              
-              function getDayIndex(date) {
-                // Which day is it?
-                var iDay = date.getDay();
-                var iMonth = date.getMonth();
+              if ( options.highlightedElements ) {
+                var target = options.highlightedElements;
                 
-                var zIndex = 1;
-                var dNew = new Date(date);
-                dNew.setDate(1);
-                
-                while ( dNew.getMonth() == iMonth )
-                {
-                  if ( dNew.getDay() == iDay ) {
-                    if ( zIndex == 4 ) {
-                      // Check if this is, in fact, the last.
-                      var temp = new Date(dNew);
-                      temp.addDays(7);
-                      if ( temp.getMonth() != iMonth ) {
-                        zIndex = "last";
-                      }
-                    }
-                    if ( zIndex > 4 ) {
-                      zIndex = "last";
-                    }
-
-                    if ( $.isNumeric(zIndex) ) {
-                      zIndex++;
-                    }
-                  }
-
-                  if ( dNew.getDate() == date.getDate() ) {
-                    return zIndex;
-                  }
-                
-                  // Increment the day counter.
-                  dNew.addDays(1);
-                }
-                
-                return;
-              }  // getDayIndex
-
-              function getDateFromDayIndexMonth(iDay, zIndex, iMonth) {
-                var dTarget = new Date();
-                dTarget.setDate(1);
-                dTarget.setMonth(iMonth);
-                
-                while ( dTarget.getMonth() == iMonth ) {
-                  // If we're the same calendar day...
-                  if ( dTarget.getDay() == iDay ) {
-                    // ... and the same day index.
-                    if ( getDayIndex(dTarget) == zIndex ) {
-                      return dTarget;
-                    }
-                  }
+                $.each(target, function() {
+                  var dTarget = getDateFromDayIndexMonth(this.day, this.index, date.getMonth());
+                  dTarget.setHours(0,0,0,0);
                   
-                  dTarget.addDays(1);
-                }
-                
-                return null;
-              }  // getDateFromDayIndexMonth
-              
-              if ( date.getTime() == options.date ) {
-                // We now know the indices of this element (i.e. Calendar, Week, Date)
-                if ( typeof highlight == "undefined" ) {
-                  highlightedItem = {
-                    day: date.getDay(),
-                    month: date.getMonth(),
-                    index: getDayIndex(date)
-                  };
-
-                  var test = getDayIndex(new Date("2012/9/25"));
-                  
-                  fill(el, highlightedItem);
-                  return;
-                }
-              }
-              
-              if ( typeof highlight != "undefined" ) {
-                var dTarget = getDateFromDayIndexMonth(highlight.day, highlight.index, date.getMonth());
-                dTarget.setHours(0,0,0,0);
-                
-                if ( dTarget.getTime() == date.getTime() ) {
-                  var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
-                  if ( iIn < 0 ) {                  
-                    data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+                  if ( dTarget.getMonth() == date.getMonth() && dTarget.getDate() == date.getDate() ) {
+                    var iIn = $.inArray("datepickerDisabled", data.weeks[indic].days[indic2].classname);
+                    if ( iIn < 0 ) {                  
+                      data.weeks[indic].days[indic2].classname.push('datepickerHighlighted');
+                    }
                   }
-                }
+                });
               }
             }  // Monthly
             
@@ -610,8 +583,6 @@
             
             date.addDays(1);
           }
-          
-      
       
           // Fill the datepickerDays template with data
           html = tmpl(tpl.days.join(''), data) + html;
@@ -704,6 +675,9 @@
        * the title, next/previous, or a date cell is clicked on.
        */
       click = function(ev) {
+      
+      var that = this;
+      
         if ($(ev.target).is('span')) {
           ev.target = ev.target.parentNode;
         }
@@ -825,11 +799,46 @@
                       $.each(options.date, function(nr, dat){
                         if (dat == val) {
                           options.date.splice(nr,1);
+                          
+                          var toDelete = null;
+                          $.each( options.highlightedElements, function() {                  
+                            if ( this.base.getTime() == val ) {
+                              toDelete = this;
+                            }
+                          });
+                          if ( toDelete != null ) {
+                            options.highlightedElements.splice($.inArray(toDelete, options.highlightedElements), 1);
+                          }
+                          
                           return false;
                         }
                       });
                     } else {
                       options.date.push(val);
+                      
+                      var dThis = new Date(val);
+                      var selected = {};
+                      
+                      if ( options.highlightMode == "monthly" ) {
+      
+                        testFn();
+      
+                        selected = {
+                          day: dThis.getDay(),
+                          month: dThis.getMonth(),
+                          index: getDayIndex(dThis),
+                          base: dThis
+                        }
+                      }
+                      else if ( options.highlightMode == "weekly" ) {
+                        selected = {
+                          week: parseInt(dThis.getDate() / 7),
+                          day: dThis.getDay(),
+                          base: dThis
+                        }
+                      }
+                      
+                      options.highlightedElements.push(selected);
                     }
                     break;
                   case 'range':
@@ -1239,6 +1248,14 @@
           return options.current;
         }
       },
+
+      getHighlighted: function() {
+        if (this.size() > 0) {
+          var options = $('#' + $(this).data('datepickerId')).data('datepicker');
+        
+          return options.highlightedElements;
+        }
+      },
       
       /**
        * Returns the currently selected date(s) and the datepicker element.
@@ -1320,6 +1337,7 @@
     DatePickerMoveTo: DatePicker.moveTo,
     DatePickerGetBounds: DatePicker.getBounds,
     DatePickerGetCurrent: DatePicker.getCurrent,
+    DatePickerGetHighlighted: DatePicker.getHighlighted,
     DatePickerSetHighlightMode: DatePicker.setHighlightMode
   });
 })(jQuery);
